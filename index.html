@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Data Center Map – Global Infrastructure Tracker 2025–2026</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --text-xs:.75rem; --text-sm:.875rem; --text-base:1rem; --text-lg:1.25rem; --text-xl:1.5rem;
+  --sp1:.25rem;--sp2:.5rem;--sp3:.75rem;--sp4:1rem;--sp5:1.25rem;--sp6:1.5rem;--sp8:2rem;
+  --r-sm:.375rem;--r-md:.5rem;--r-lg:.75rem;--r-xl:1rem;--r-full:9999px;
+  --tr:180ms cubic-bezier(.16,1,.3,1);
+  --ff:"Inter",sans-serif;--fm:"JetBrains Mono",monospace;
+}
+:root,[data-theme="light"]{
+  --bg:#f7f6f2;--surf:#f9f8f5;--surf2:#fbfbf9;--surfo:#f3f0ec;
+  --div:#dcd9d5;--bdr:#d4d1ca;--tx:#28251d;--mt:#7a7974;--ft:#bab9b4;
+  --pr:#01696f;--prh:#0c4e54;--prhl:#cedcd8;
+  --sh1:0 1px 2px rgba(0,0,0,.06);--sh2:0 4px 12px rgba(0,0,0,.08);--sh3:0 12px 32px rgba(0,0,0,.12);
+  --mf:brightness(1.02) contrast(.97);
+}
+[data-theme="dark"]{
+  --bg:#0d0f13;--surf:#131720;--surf2:#181d26;--surfo:#1a1f2b;
+  --div:#232836;--bdr:#2c3245;--tx:#cdd2e0;--mt:#6e7690;--ft:#404558;
+  --pr:#38c8d1;--prh:#25adb5;--prhl:#162829;
+  --sh1:0 1px 2px rgba(0,0,0,.3);--sh2:0 4px 12px rgba(0,0,0,.4);--sh3:0 12px 32px rgba(0,0,0,.5);
+  --mf:brightness(.62) contrast(1.12) saturate(.7) hue-rotate(195deg);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;height:100%}
+body{font-family:var(--ff);font-size:var(--text-sm);color:var(--tx);background:var(--bg);height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+input,select{font:inherit}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:var(--sp4);padding:var(--sp3) var(--sp6);background:var(--surf);border-bottom:1px solid var(--div);z-index:1000;flex-shrink:0;box-shadow:var(--sh1)}
+.logo{display:flex;align-items:center;gap:var(--sp3);flex-shrink:0}
+.logo-tx{font-size:var(--text-base);font-weight:700;letter-spacing:-.02em;color:var(--tx)}
+.logo-tx span{color:var(--pr)}
+.hdr-stats{display:flex;gap:var(--sp6);margin-left:var(--sp4)}
+.stat{display:flex;flex-direction:column}
+.stat-v{font-family:var(--fm);font-size:var(--text-sm);font-weight:600;color:var(--tx);line-height:1.2}
+.stat-l{font-size:var(--text-xs);color:var(--mt)}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:var(--sp3)}
+.tbtn{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--mt);background:var(--surfo);transition:all var(--tr)}
+.tbtn:hover{color:var(--tx);background:var(--bdr)}
+
+/* APP */
+.app{flex:1;display:flex;min-height:0;position:relative}
+
+/* SIDEBAR */
+.sb{width:340px;flex-shrink:0;display:flex;flex-direction:column;background:var(--surf);border-right:1px solid var(--div);overflow:hidden;transition:width .3s cubic-bezier(.16,1,.3,1)}
+.sb.collapsed{width:0}
+.sb-in{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:340px}
+
+.flt{padding:var(--sp4);border-bottom:1px solid var(--div);display:flex;flex-direction:column;gap:var(--sp3)}
+.sw{position:relative}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mt);pointer-events:none;width:14px;height:14px}
+.srch{width:100%;padding:var(--sp2) var(--sp3) var(--sp2) 32px;background:var(--surfo);border:1px solid var(--bdr);border-radius:var(--r-md);color:var(--tx);font-size:var(--text-sm);outline:none;transition:border-color var(--tr),box-shadow var(--tr)}
+.srch:focus{border-color:var(--pr);box-shadow:0 0 0 3px color-mix(in oklch,var(--pr) 20%,transparent)}
+.srch::placeholder{color:var(--ft)}
+.fr{display:flex;gap:var(--sp2);flex-wrap:wrap}
+.fc{padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--bdr);color:var(--mt);background:transparent;transition:all var(--tr);white-space:nowrap}
+.fc:hover,.fc.active{background:var(--prhl);border-color:var(--pr);color:var(--pr)}
+.sc{padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--bdr);color:var(--mt);background:transparent;transition:all var(--tr)}
+.sc:hover,.sc.active{background:var(--prhl);border-color:var(--pr);color:var(--pr)}
+
+.sb-bar{display:flex;gap:var(--sp2);padding:var(--sp3) var(--sp4);background:var(--surfo);border-bottom:1px solid var(--div);flex-wrap:wrap}
+.ms{flex:1;min-width:60px;padding:var(--sp2) var(--sp3);background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r-md);text-align:center}
+.ms-v{font-size:var(--text-sm);font-weight:700;font-family:var(--fm);color:var(--tx);line-height:1.2}
+.ms-l{font-size:10px;color:var(--ft);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+
+.lhdr{padding:var(--sp3) var(--sp4);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--div);flex-shrink:0}
+.lct{font-size:var(--text-xs);color:var(--mt);font-family:var(--fm)}
+.dcl{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
+.dcl::-webkit-scrollbar{width:4px}
+.dcl::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+.dci{padding:var(--sp3) var(--sp4);border-bottom:1px solid var(--div);cursor:pointer;transition:background var(--tr);display:flex;flex-direction:column;gap:4px}
+.dci:hover{background:var(--surfo)}
+.dci.sel{background:var(--prhl);border-left:2px solid var(--pr)}
+.dci-top{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp2)}
+.dcn{font-size:var(--text-sm);font-weight:600;color:var(--tx);line-height:1.3}
+.bdg{padding:2px 7px;border-radius:var(--r-full);font-size:10px;font-weight:600;flex-shrink:0;text-transform:uppercase;letter-spacing:.03em}
+.bc{background:rgba(232,160,32,.18);color:#e8a020;border:1px solid rgba(232,160,32,.4)}
+.bp{background:rgba(108,142,191,.18);color:#6c8ebf;border:1px solid rgba(108,142,191,.4)}
+.bo{background:rgba(76,175,80,.18);color:#4caf50;border:1px solid rgba(76,175,80,.4)}
+.bx{background:rgba(232,88,42,.18);color:#e8582a;border:1px solid rgba(232,88,42,.4)}
+.be{background:rgba(38,198,218,.18);color:#26c6da;border:1px solid rgba(38,198,218,.4)}
+/* EEAI special badge */
+.bi{background:rgba(255,215,0,.22);color:#ffd700;border:1px solid rgba(255,215,0,.5)}
+.dcm{font-size:11px;color:var(--mt);display:flex;gap:var(--sp3);flex-wrap:wrap}
+.dcc{font-weight:500;color:var(--pr)}
+.dci-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:1px}
+
+/* MAP */
+.mc{flex:1;position:relative}
+#map{width:100%;height:100%}
+.leaflet-tile-pane{filter:var(--mf)}
+
+/* DETAIL PANEL */
+.dp{position:absolute;bottom:var(--sp6);right:var(--sp6);width:380px;background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r-xl);box-shadow:var(--sh3);z-index:500;overflow:hidden;transition:transform .2s cubic-bezier(.16,1,.3,1),opacity .2s;transform:translateY(8px);opacity:0;pointer-events:none}
+.dp.vis{transform:translateY(0);opacity:1;pointer-events:all}
+.dp-hdr{padding:var(--sp4);display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp3);border-bottom:1px solid var(--div);background:var(--surf2)}
+.dp-n{font-size:var(--text-base);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:2px}
+.dp-c{font-size:var(--text-sm);font-weight:500}
+.dp-cls{width:28px;height:28px;border-radius:var(--r-sm);color:var(--mt);display:flex;align-items:center;justify-content:center;transition:all var(--tr);flex-shrink:0}
+.dp-cls:hover{background:var(--surfo);color:var(--tx)}
+.dp-bd{padding:var(--sp4);display:flex;flex-direction:column;gap:var(--sp3)}
+.dr{display:flex;justify-content:space-between;align-items:baseline;font-size:var(--text-xs);gap:var(--sp2)}
+.dl{color:var(--mt)}
+.dv{color:var(--tx);font-weight:500;text-align:right;font-family:var(--fm);word-break:break-word;max-width:220px}
+.dn{font-size:var(--text-xs);color:var(--mt);line-height:1.6;padding:var(--sp3);background:var(--surfo);border-radius:var(--r-md)}
+/* EEAI gold border on detail panel */
+.dp.eeai{border-color:#ffd700;box-shadow:0 0 0 1px rgba(255,215,0,.3),var(--sh3)}
+.dp.eeai .dp-hdr{background:rgba(255,215,0,.06)}
+
+/* LEGEND */
+.leg{position:absolute;bottom:var(--sp6);left:var(--sp6);background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r-lg);padding:var(--sp3) var(--sp4);z-index:500;min-width:180px;box-shadow:var(--sh2)}
+.leg-t{font-size:10px;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:var(--sp2)}
+.leg-r{display:flex;align-items:center;gap:var(--sp2);font-size:11px;color:var(--mt);margin-bottom:5px}
+.leg-d{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* SIDEBAR TOGGLE */
+.sbt{position:absolute;top:50%;left:0;transform:translateY(-50%);z-index:600;width:22px;height:44px;background:var(--surf);border:1px solid var(--div);border-left:none;border-radius:0 var(--r-md) var(--r-md) 0;display:flex;align-items:center;justify-content:center;color:var(--mt);cursor:pointer;transition:all var(--tr);box-shadow:var(--sh1)}
+.sbt:hover{color:var(--tx);background:var(--surfo)}
+
+/* POPUP */
+.leaflet-popup-content-wrapper{background:var(--surf)!important;border:1px solid var(--bdr)!important;border-radius:var(--r-lg)!important;box-shadow:var(--sh3)!important;padding:0!important}
+.leaflet-popup-content{margin:0!important;color:var(--tx)!important}
+.leaflet-popup-tip{background:var(--surf)!important}
+.leaflet-popup-close-button{color:var(--mt)!important;top:8px!important;right:10px!important;font-size:18px!important}
+.pi{padding:var(--sp4);min-width:240px}
+.pn{font-weight:700;font-size:var(--text-sm);color:var(--tx);margin-bottom:2px;padding-right:20px;line-height:1.3}
+.pc{font-size:var(--text-xs);font-weight:500;margin-bottom:var(--sp2)}
+.pr{display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--mt);gap:var(--sp4);margin-top:3px}
+.pv{color:var(--tx);font-family:var(--fm);font-weight:500}
+.pbdg{display:inline-block;margin-top:var(--sp2);padding:2px 7px;border-radius:var(--r-full);font-size:10px;font-weight:600;text-transform:uppercase}
+
+/* EEAI star marker */
+.eeai-marker{display:flex;align-items:center;justify-content:center;font-size:18px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));cursor:pointer;transition:transform .15s ease}
+.eeai-marker:hover{transform:scale(1.2)}
+
+@media(max-width:768px){
+  .sb{position:absolute;top:0;left:0;height:100%;z-index:700;width:100%;max-width:320px}
+  .sb.collapsed{transform:translateX(-100%)}
+  .dp{left:var(--sp3);right:var(--sp3);width:auto;bottom:var(--sp3)}
+  .leg{display:none}
+  .hdr-stats{display:none}
+}
+:focus-visible{outline:2px solid var(--pr);outline-offset:2px;border-radius:var(--r-sm)}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <rect width="32" height="32" rx="8" fill="var(--pr)" opacity=".15"/>
+      <circle cx="16" cy="16" r="10" stroke="var(--pr)" stroke-width="1.5" fill="none" opacity=".5"/>
+      <circle cx="16" cy="16" r="5" fill="var(--pr)" opacity=".7"/>
+      <circle cx="16" cy="5" r="2.2" fill="var(--pr)"/>
+      <circle cx="16" cy="27" r="2.2" fill="var(--pr)"/>
+      <circle cx="5" cy="16" r="2.2" fill="var(--pr)"/>
+      <circle cx="27" cy="16" r="2.2" fill="var(--pr)"/>
+      <line x1="16" y1="7.5" x2="16" y2="11" stroke="var(--pr)" stroke-width="1.3"/>
+      <line x1="16" y1="21" x2="16" y2="24.5" stroke="var(--pr)" stroke-width="1.3"/>
+      <line x1="7.5" y1="16" x2="11" y2="16" stroke="var(--pr)" stroke-width="1.3"/>
+      <line x1="21" y1="16" x2="24.5" y2="16" stroke="var(--pr)" stroke-width="1.3"/>
+    </svg>
+    <span class="logo-tx">AI <span>Data Center</span> Map</span>
+  </div>
+  <div class="hdr-stats">
+    <div class="stat"><span class="stat-v" id="ht">44</span><span class="stat-l">Total Projects</span></div>
+    <div class="stat"><span class="stat-v" id="hb">24</span><span class="stat-l">Under Construction</span></div>
+    <div class="stat"><span class="stat-v">$2.3T+</span><span class="stat-l">Global Pipeline</span></div>
+    <div class="stat"><span class="stat-v">2025–26</span><span class="stat-l">Tracked Period</span></div>
+  </div>
+  <div class="hdr-r">
+    <button class="tbtn" id="tbtn" aria-label="Switch to light mode">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sb" id="sb" aria-label="Filters and project list">
+    <div class="sb-in">
+      <div class="flt">
+        <div class="sw">
+          <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="search" class="srch" id="srch" placeholder="Search name, company, location…" autocomplete="off" aria-label="Search data centers">
+        </div>
+        <div class="fr" id="cf" role="group" aria-label="Filter by company">
+          <button class="fc active" data-cat="all">All</button>
+          <button class="fc" data-cat="Stargate">Stargate</button>
+          <button class="fc" data-cat="Microsoft">MSFT</button>
+          <button class="fc" data-cat="AWS">AWS</button>
+          <button class="fc" data-cat="Meta">Meta</button>
+          <button class="fc" data-cat="Google">Google</button>
+          <button class="fc" data-cat="xAI">xAI</button>
+          <button class="fc" data-cat="CoreWeave">CoreWeave</button>
+          <button class="fc" data-cat="Oracle">Oracle</button>
+          <button class="fc" data-cat="Independent">EEAI</button>
+          <button class="fc" data-cat="International">Intl</button>
+          <button class="fc" data-cat="Other">Other</button>
+        </div>
+        <div class="fr" id="sf" role="group" aria-label="Filter by status">
+          <button class="sc active" data-status="all">All Status</button>
+          <button class="sc" data-status="construction">🔨 Building</button>
+          <button class="sc" data-status="planned">📋 Planned</button>
+          <button class="sc" data-status="operational">✅ Live</button>
+        </div>
+      </div>
+      <div class="sb-bar">
+        <div class="ms"><div class="ms-v" id="sb2">24</div><div class="ms-l">Building</div></div>
+        <div class="ms"><div class="ms-v" id="sp2">14</div><div class="ms-l">Planned</div></div>
+        <div class="ms"><div class="ms-v" id="sl2">6</div><div class="ms-l">Live</div></div>
+        <div class="ms"><div class="ms-v" id="sg2">60+</div><div class="ms-l">GW Total</div></div>
+      </div>
+      <div class="lhdr">
+        <span class="lct" id="lct">44 projects</span>
+        <span style="font-size:var(--text-xs);color:var(--mt)">Sorted by investment</span>
+      </div>
+      <div class="dcl" id="dcl" role="listbox" aria-label="Data center projects"></div>
+    </div>
+  </aside>
+
+  <div class="mc">
+    <div id="map" role="application" aria-label="Interactive AI data center map"></div>
+
+    <button class="sbt" id="sbt" aria-label="Toggle sidebar" aria-expanded="true">
+      <svg id="ti" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+
+    <div class="leg" role="complementary" aria-label="Legend">
+      <div class="leg-t">Status</div>
+      <div class="leg-r"><div class="leg-d" style="background:#e8a020"></div> Under Construction</div>
+      <div class="leg-r"><div class="leg-d" style="background:#6c8ebf"></div> Planned</div>
+      <div class="leg-r"><div class="leg-d" style="background:#4caf50"></div> Operational</div>
+      <div class="leg-r"><div class="leg-d" style="background:#e8582a"></div> Partial / Expanding</div>
+      <div class="leg-r"><div class="leg-d" style="background:#ffd700;border:2px solid #fff;box-shadow:0 0 4px #ffd70088"></div> EEAI (Independent)</div>
+      <div class="leg-t" style="margin-top:10px">Dot Size ≈ Power Capacity</div>
+    </div>
+
+    <div class="dp" id="dp" role="dialog" aria-label="Project details" aria-hidden="true">
+      <div class="dp-hdr">
+        <div>
+          <div class="dp-n" id="dn"></div>
+          <div class="dp-c" id="dc2"></div>
+        </div>
+        <button class="dp-cls" id="dpc" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="dp-bd">
+        <div class="dr"><span class="dl">Status</span><span class="dv" id="dst"></span></div>
+        <div class="dr"><span class="dl">Location</span><span class="dv" id="dlc"></span></div>
+        <div class="dr" id="dinvr"><span class="dl">Investment</span><span class="dv" id="dinv"></span></div>
+        <div class="dr" id="dcpr"><span class="dl">Capacity</span><span class="dv" id="dcp"></span></div>
+        <div class="dr" id="dsqr"><span class="dl">Facility Size</span><span class="dv" id="dsq"></span></div>
+        <div class="dr"><span class="dl">Region</span><span class="dv" id="drg"></span></div>
+        <div class="dn" id="dnt"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DC = [{"id": 1, "name": "Stargate I \u2013 Project Ludicrous (Abilene)", "company": "OpenAI / Oracle / Crusoe", "category": "Stargate", "status": "Under Construction / Partial", "lat": 32.4487, "lon": -99.7331, "city": "Abilene", "state": "TX", "country": "USA", "investment": "$500B (total project)", "capacity_gw": 1.2, "sqft": 4000000, "year_announced": 2025, "notes": "Flagship Stargate site; GB200 racks online June 2025; 8 buildings by Oracle; 1.2 GW target capacity", "region": "North America"}, {"id": 2, "name": "Stargate Frontier Campus", "company": "OpenAI / Oracle / SoftBank", "category": "Stargate", "status": "Under Construction", "lat": 33.0, "lon": -99.5, "city": "Shackelford County", "state": "TX", "country": "USA", "investment": "$400B+ (total)", "capacity_gw": 1.0, "sqft": null, "year_announced": 2025, "notes": "New Stargate campus adjacent to Abilene complex", "region": "North America"}, {"id": 3, "name": "Stargate Milam Data Center (SoftBank)", "company": "SoftBank / SB Energy", "category": "Stargate", "status": "Planned", "lat": 30.7, "lon": -96.9, "city": "Milam County", "state": "TX", "country": "USA", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "Rapid-deployment powered infrastructure, SB Energy development", "region": "North America"}, {"id": 4, "name": "Stargate Project Jupiter", "company": "OpenAI / Oracle", "category": "Stargate", "status": "Planned", "lat": 32.3, "lon": -106.8, "city": "Do\u00f1a Ana County", "state": "NM", "country": "USA", "investment": "N/A", "capacity_gw": 1.0, "sqft": null, "year_announced": 2025, "notes": "Southwest Stargate site", "region": "North America"}, {"id": 5, "name": "Stargate Lordstown Campus", "company": "OpenAI / Oracle", "category": "Stargate", "status": "Planned", "lat": 41.1617, "lon": -80.7098, "city": "Lordstown", "state": "OH", "country": "USA", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "Ohio Stargate site", "region": "North America"}, {"id": 6, "name": "Stargate Port Washington Campus", "company": "OpenAI / Oracle / Vantage", "category": "Stargate", "status": "Under Construction", "lat": 43.3886, "lon": -87.8756, "city": "Port Washington", "state": "WI", "country": "USA", "investment": "$15B", "capacity_gw": 1.0, "sqft": null, "year_announced": 2025, "notes": "672-acre campus, 4 data centers, completion 2028", "region": "North America"}, {"id": 7, "name": "Stargate Saline Township Site", "company": "OpenAI / Oracle", "category": "Stargate", "status": "Planned", "lat": 42.2, "lon": -83.7, "city": "Saline Township", "state": "MI", "country": "USA", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "Michigan Stargate site", "region": "North America"}, {"id": 8, "name": "Stargate UAE (Abu Dhabi)", "company": "OpenAI / G42 / Oracle / SoftBank", "category": "Stargate", "status": "Planned", "lat": 24.4539, "lon": 54.3773, "city": "Abu Dhabi", "state": null, "country": "UAE", "investment": "N/A", "capacity_gw": 5.0, "sqft": null, "year_announced": 2025, "notes": "Largest AI infrastructure project outside US; 10 sq miles; initial phase launch 2026", "region": "Middle East"}, {"id": 9, "name": "Fairwater AI Datacenter \u2013 Wisconsin", "company": "Microsoft", "category": "Microsoft", "status": "Under Construction", "lat": 42.7198, "lon": -87.9813, "city": "Mount Pleasant", "state": "WI", "country": "USA", "investment": "$80B (global FY2026)", "capacity_gw": 3.3, "sqft": null, "year_announced": 2025, "notes": "Largest/most sophisticated AI factory; NVIDIA GB200 NVL72; near-zero water cooling; AI WAN network", "region": "North America"}, {"id": 10, "name": "Fairwater AI Datacenter \u2013 Atlanta", "company": "Microsoft", "category": "Microsoft", "status": "Operational", "lat": 33.749, "lon": -84.388, "city": "Atlanta", "state": "GA", "country": "USA", "investment": "$80B (global)", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "Second Fairwater AI datacenter; online Oct 2025; NVIDIA GB200 NVL72 racks; AI superfactory network", "region": "North America"}, {"id": 11, "name": "Microsoft AI Factory \u2013 Abilene", "company": "Microsoft / Crusoe", "category": "Microsoft", "status": "Under Construction", "lat": 32.4, "lon": -99.6, "city": "Abilene", "state": "TX", "country": "USA", "investment": "N/A", "capacity_gw": 2.1, "sqft": null, "year_announced": 2026, "notes": "2 new AI factory buildings + on-site power plant; total campus 10 buildings, 2.1GW", "region": "North America"}, {"id": 12, "name": "Microsoft Azure \u2013 Northern Virginia", "company": "Microsoft", "category": "Microsoft", "status": "Expanding", "lat": 39.043, "lon": -77.4878, "city": "Ashburn", "state": "VA", "country": "USA", "investment": "$80B global", "capacity_gw": null, "sqft": null, "year_announced": 2024, "notes": "Continuously expanding; 24 facilities in Virginia; GPT-4 inference demand", "region": "North America"}, {"id": 13, "name": "Microsoft Data Center \u2013 La Porte", "company": "Microsoft", "category": "Microsoft", "status": "Under Construction", "lat": 41.6103, "lon": -86.7228, "city": "La Porte", "state": "IN", "country": "USA", "investment": "$1B", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "489-acre site, 300 Boyd Blvd, completion Q4 2032", "region": "North America"}, {"id": 14, "name": "Microsoft AI Datacenter \u2013 Narvik", "company": "Microsoft / nScale / Aker JV", "category": "Microsoft", "status": "Planned", "lat": 68.438, "lon": 17.427, "city": "Narvik", "state": null, "country": "Norway", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "New hyperscale AI datacenter; partnership with nScale and Aker JV; renewable energy focus", "region": "Europe"}, {"id": 15, "name": "Microsoft Data Center \u2013 Loughton", "company": "Microsoft", "category": "Microsoft", "status": "Planned", "lat": 51.647, "lon": 0.0713, "city": "Loughton", "state": null, "country": "UK", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "Part of UK AI infrastructure expansion", "region": "Europe"}, {"id": 16, "name": "Meta Richland Parish Data Center", "company": "Meta", "category": "Meta", "status": "Under Construction", "lat": 32.3, "lon": -91.8, "city": "Richland Parish", "state": "LA", "country": "USA", "investment": "$10B+", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "$10B project; major hub for Meta global ops; 4,000+ skilled trade workers peak; broke ground 2025", "region": "North America"}, {"id": 17, "name": "Meta El Paso Data Center", "company": "Meta", "category": "Meta", "status": "Planned", "lat": 31.7619, "lon": -106.485, "city": "El Paso", "state": "TX", "country": "USA", "investment": "$1.5B+", "capacity_gw": 1.0, "sqft": null, "year_announced": 2025, "notes": "GW-scale facility; launch expected 2028", "region": "North America"}, {"id": 18, "name": "Meta Data Center \u2013 Graniteville, SC", "company": "Meta", "category": "Meta", "status": "Under Construction", "lat": 33.56, "lon": -81.81, "city": "Graniteville", "state": "SC", "country": "USA", "investment": "$800M", "capacity_gw": null, "sqft": 715000, "year_announced": 2025, "notes": "715,000 sqft at Sage Mill Industrial Park; 100% renewable energy", "region": "North America"}, {"id": 19, "name": "Meta Data Center \u2013 Cheyenne, WY", "company": "Meta", "category": "Meta", "status": "Under Construction", "lat": 41.14, "lon": -104.82, "city": "Cheyenne", "state": "WY", "country": "USA", "investment": "$800M+", "capacity_gw": null, "sqft": null, "year_announced": 2024, "notes": "Broke ground 2024; 1,000+ skilled trade workers at peak", "region": "North America"}, {"id": 20, "name": "Meta Data Center \u2013 Jeffersonville, IN", "company": "Meta", "category": "Meta", "status": "Under Construction", "lat": 38.277, "lon": -85.737, "city": "Jeffersonville", "state": "IN", "country": "USA", "investment": "N/A", "capacity_gw": null, "sqft": 700000, "year_announced": 2024, "notes": "700K sqft; River Ridge Commerce Center; operational by 2026", "region": "North America"}, {"id": 21, "name": "AWS Project Rainier \u2013 Indiana", "company": "Amazon / AWS", "category": "AWS", "status": "Operational", "lat": 41.7, "lon": -86.2, "city": "New Carlisle (St. Joseph County)", "state": "IN", "country": "USA", "investment": "$11B", "capacity_gw": null, "sqft": null, "year_announced": 2024, "notes": "30 interconnected DCs, 1000 acres; Trainium 2 servers for Anthropic Claude LLMs; completed 2025", "region": "North America"}, {"id": 22, "name": "AWS Additional Indiana Campus", "company": "Amazon / AWS", "category": "AWS", "status": "Planned", "lat": 41.5, "lon": -86.5, "city": "Northern Indiana", "state": "IN", "country": "USA", "investment": "$15B", "capacity_gw": 2.0, "sqft": null, "year_announced": 2025, "notes": "10% larger than New Carlisle campus; start 2027; 1,100+ high-skilled jobs", "region": "North America"}, {"id": 23, "name": "AWS Pennsylvania AI Campuses", "company": "Amazon / AWS", "category": "AWS", "status": "Under Construction", "lat": 40.2, "lon": -75.4, "city": "Salem / Falls Township", "state": "PA", "country": "USA", "investment": "$20B", "capacity_gw": null, "sqft": 2000000, "year_announced": 2025, "notes": "Largest capex in PA history; Keystone Trade Center; 1,250+ jobs; 10 structures", "region": "North America"}, {"id": 24, "name": "AWS Richmond County Expansion", "company": "Amazon / AWS", "category": "AWS", "status": "Under Construction", "lat": 34.95, "lon": -79.99, "city": "Richmond County", "state": "NC", "country": "USA", "investment": "$10B", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "500+ high-skilled jobs; education/training programs", "region": "North America"}, {"id": 25, "name": "AWS Louisiana Campuses", "company": "Amazon / AWS", "category": "AWS", "status": "Planned", "lat": 32.52, "lon": -93.75, "city": "Caddo / Bossier Parishes", "state": "LA", "country": "USA", "investment": "$12B", "capacity_gw": null, "sqft": null, "year_announced": 2026, "notes": "Multi-site; STACK Infrastructure developer; 540+ FT jobs; $400M water infrastructure", "region": "North America"}, {"id": 26, "name": "Google West Memphis Data Center", "company": "Google", "category": "Google", "status": "Under Construction", "lat": 35.146, "lon": -90.185, "city": "West Memphis", "state": "AR", "country": "USA", "investment": "$10B", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "1,000+ acre campus; 5+ large-scale DC buildings; adjacent to xAI Memphis complex", "region": "North America"}, {"id": 27, "name": "Google Texas Data Centers (Multiple)", "company": "Google", "category": "Google", "status": "Under Construction", "lat": 32.7, "lon": -97.3, "city": "Midlothian / Armstrong / Haskell", "state": "TX", "country": "USA", "investment": "$40B (TX through 2027)", "capacity_gw": null, "sqft": null, "year_announced": 2026, "notes": "$880M Midlothian filing + Armstrong + Haskell counties; part of $40B Texas plan", "region": "North America"}, {"id": 28, "name": "Google Pine Island Data Center", "company": "Google", "category": "Google", "status": "Under Construction", "lat": 44.068, "lon": -92.656, "city": "Pine Island", "state": "MN", "country": "USA", "investment": "$185B (global 2026)", "capacity_gw": null, "sqft": null, "year_announced": 2026, "notes": "Wind/solar/battery power via Xcel Energy contract; AI + cloud capabilities", "region": "North America"}, {"id": 29, "name": "Google Lincoln Data Center", "company": "Google", "category": "Google", "status": "Under Construction", "lat": 40.8136, "lon": -96.7026, "city": "Lincoln", "state": "NE", "country": "USA", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "Part of Google US expansion", "region": "North America"}, {"id": 30, "name": "Google India \u2013 Visakhapatnam", "company": "Google / Adani", "category": "Google", "status": "Planned", "lat": 17.686, "lon": 83.218, "city": "Visakhapatnam", "state": "Andhra Pradesh", "country": "India", "investment": "$15B (India 2026-2030)", "capacity_gw": 1.0, "sqft": null, "year_announced": 2025, "notes": "Adani partnership; India's largest gigawatt-scale DC campus; additional campuses in Noida, UP", "region": "Asia-Pacific"}, {"id": 31, "name": "xAI Colossus 1 \u2013 Memphis", "company": "xAI (Elon Musk)", "category": "xAI", "status": "Operational", "lat": 35.1027, "lon": -90.0877, "city": "Memphis (Frank C. Pidgeon Industrial Park)", "state": "TN", "country": "USA", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2024, "notes": "World's largest supercomputer; 200,000 Nvidia H100 GPUs; trains Grok LLM; 552-acre lease", "region": "North America"}, {"id": 32, "name": "xAI Colossus 2 \u2013 Memphis Whitehaven", "company": "xAI (Elon Musk)", "category": "xAI", "status": "Under Construction", "lat": 35.07, "lon": -90.06, "city": "Memphis (Whitehaven)", "state": "TN", "country": "USA", "investment": "$659M expansion", "capacity_gw": null, "sqft": 1000000, "year_announced": 2025, "notes": "1M sqft; $659M permit for 312K sqft additional building at 5414 Tulane Rd; 2GW campus target", "region": "North America"}, {"id": 33, "name": "CoreWeave \u2013 Kenilworth, NJ", "company": "CoreWeave", "category": "CoreWeave", "status": "Under Construction", "lat": 40.676, "lon": -74.114, "city": "Kenilworth", "state": "NJ", "country": "USA", "investment": "$1.8B", "capacity_gw": 0.25, "sqft": 392600, "year_announced": 2025, "notes": "Former Merck campus; 250MW; $250M NJ tax credit; operational early 2027", "region": "North America"}, {"id": 34, "name": "CoreWeave \u2013 Plano, TX", "company": "CoreWeave", "category": "CoreWeave", "status": "Operational", "lat": 33.0198, "lon": -96.6989, "city": "Plano", "state": "TX", "country": "USA", "investment": "$1.6B", "capacity_gw": null, "sqft": null, "year_announced": 2023, "notes": "Operational; $1.6B investment", "region": "North America"}, {"id": 35, "name": "Nebius \u2013 Vineland, NJ", "company": "Nebius / Microsoft", "category": "Other", "status": "Under Construction", "lat": 39.486, "lon": -74.997, "city": "Vineland", "state": "NJ", "country": "USA", "investment": "$17.4B (MSFT deal)", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "$17.4B Microsoft GPU supply deal through 2031; Blackwell GPUs; aerial survey Dec 2025", "region": "North America"}, {"id": 36, "name": "UAE-US AI Campus \u2013 Abu Dhabi", "company": "G42 / US Hyperscalers", "category": "International", "status": "Planned", "lat": 24.3, "lon": 54.5, "city": "Abu Dhabi", "state": null, "country": "UAE", "investment": "Multi-billion", "capacity_gw": 5.0, "sqft": null, "year_announced": 2025, "notes": "10 sq miles; largest AI facility outside US; AWS, Google, Meta, MSFT, xAI as tenants", "region": "Middle East"}, {"id": 37, "name": "Saudi Arabia AI Hub \u2013 Humain/Google", "company": "Google / Saudi PIF / Humain", "category": "International", "status": "Planned", "lat": 24.7136, "lon": 46.6753, "city": "Riyadh", "state": null, "country": "Saudi Arabia", "investment": "$10B", "capacity_gw": 1.9, "sqft": null, "year_announced": 2025, "notes": "$77B total Humain strategy; Google Cloud + PIF partnership; 1.9GW by 2030; Vision 2030", "region": "Middle East"}, {"id": 38, "name": "NEOM DataVolt AI Factory", "company": "DataVolt / NEOM", "category": "International", "status": "Planned", "lat": 28.0, "lon": 35.0, "city": "NEOM", "state": null, "country": "Saudi Arabia", "investment": "$5B", "capacity_gw": 1.5, "sqft": null, "year_announced": 2025, "notes": "DataVolt agreement; 1.5GW AI factory; renewable/net-zero; Supermicro GPU platforms", "region": "Middle East"}, {"id": 39, "name": "Oracle Stargate \u2013 Abilene", "company": "Oracle", "category": "Oracle", "status": "Under Construction", "lat": 32.46, "lon": -99.74, "city": "Abilene", "state": "TX", "country": "USA", "investment": "$300B+ (OpenAI deal)", "capacity_gw": 4.5, "sqft": null, "year_announced": 2025, "notes": "8 buildings, 2 operational; OpenAI partnership; $50B Oracle CapEx 2026", "region": "North America"}, {"id": 40, "name": "Apple AI Server Factory \u2013 Houston", "company": "Apple / Foxconn", "category": "Other", "status": "Under Construction", "lat": 29.7604, "lon": -95.3698, "city": "Houston", "state": "TX", "country": "USA", "investment": "$10B (Advanced Mfg Fund)", "capacity_gw": null, "sqft": 250000, "year_announced": 2025, "notes": "250K sqft AI server factory; Foxconn partnership; production start 2025; fully operational 2026; part of $500B US commitment", "region": "North America"}, {"id": 41, "name": "Microsoft UAE Datacenter", "company": "Microsoft / G42", "category": "Microsoft", "status": "Under Construction", "lat": 24.2, "lon": 55.7, "city": "Abu Dhabi / Dubai", "state": null, "country": "UAE", "investment": "$15.2B", "capacity_gw": null, "sqft": null, "year_announced": 2023, "notes": "$15.2B investment 2023-2029; $1.5B G42 equity + $4.6B capex; equivalent to 81,900 H100s", "region": "Middle East"}, {"id": 42, "name": "AWS Saudi Arabia Data Centers", "company": "Amazon / AWS", "category": "AWS", "status": "Under Construction", "lat": 24.68, "lon": 46.72, "city": "Riyadh", "state": null, "country": "Saudi Arabia", "investment": "$5.3B", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "AWS $5.3B commitment; Cloud Computing Special Economic Zone; 30% of Saudi ICT spending by 2030", "region": "Middle East"}, {"id": 43, "name": "Nebius UK Cluster \u2013 Near London", "company": "Nebius", "category": "Other", "status": "Under Construction", "lat": 51.6, "lon": -0.1, "city": "Near London", "state": null, "country": "UK", "investment": "N/A", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "First major UK cluster; operational early Q4 2025; first Blackwell B GPUs in UK market", "region": "Europe"}, {"id": 44, "name": "EEAI \u2013 Bizon ZX9000 AI Compute Lab", "company": "EEAI / Dustin Salinas", "category": "Independent", "status": "Operational", "lat": 36.2627, "lon": -115.2849, "city": "Las Vegas", "state": "NV", "country": "USA", "investment": "Custom Enterprise Build", "capacity_gw": null, "sqft": null, "year_announced": 2025, "notes": "Bizon ZX9000 water-cooled AI server at 10060 W Tropical Pkwy, Las Vegas NV. 8\u00d7 NVIDIA B200 Blackwell GPUs (192 GB HBM3e each) = 1.536 TB VRAM total, NVLink 5.0 @ 1.8 TB/s inter-GPU. 160 PFLOPS FP8. Dual AMD EPYC 9665 (Zen 5, 384 cores total), 6 TB DDR5-6400 ECC RAM. 64 TB storage (8\u00d7 8TB PCIe 5.0 NVMe + 8TB SATA SSD). Dual 200 Gbps InfiniBand HDR. Runs full-precision 1T+ param models (DeepSeek V3.2, Llama 4) at 800\u20131600 tokens/sec. 2\u20133 ms latency for agentic ops. Applications: IP prototyping, market forecasting, CRM automation, private LLM hosting. OS: Windows Server 2022 + TPM 2.0.", "region": "North America"}];
+
+const SC={
+  'Under Construction':'#e8a020','Under Construction / Partial':'#e8582a',
+  'Planned':'#6c8ebf','Operational':'#4caf50','Expanding':'#26c6da',
+  'Independent':'#ffd700'
+};
+const CC={
+  Stargate:'#9b5cf6',Microsoft:'#2196f3',AWS:'#ff9900',Meta:'#1877f2',
+  Google:'#34a853',xAI:'#e53935',CoreWeave:'#e040fb',Oracle:'#f44336',
+  Independent:'#ffd700',International:'#00bcd4',Other:'#78909c'
+};
+
+let aC='all',aS='all',sq='',selId=null,sbO=true;
+let mks={};
+
+const map=L.map('map',{center:[28,8],zoom:2.4,zoomControl:true,maxBounds:[[-85,-220],[85,220]],minZoom:2});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',maxZoom:18
+}).addTo(map);
+
+function getRad(dc){
+  if(dc.capacity_gw>=5)return 22;if(dc.capacity_gw>=3)return 18;
+  if(dc.capacity_gw>=1)return 15;if(dc.capacity_gw>=0.5)return 12;
+  if(dc.capacity_gw>0)return 10;
+  if(dc.investment&&dc.investment!=='N/A'&&dc.investment!=='Custom Enterprise Build'){
+    const v=parseFloat(dc.investment.replace(/[^0-9.]/g,''));
+    if(v>=15)return 16;if(v>=10)return 14;if(v>=5)return 12;if(v>=1)return 10;
+  }
+  return 8;
+}
+function gCol(dc){
+  if(dc.category==='Independent')return '#ffd700';
+  return SC[dc.status]||'#78909c';
+}
+
+function popH(dc){
+  const loc=[dc.city,dc.state,dc.country].filter(Boolean).join(', ');
+  const bCls=dc.category==='Independent'?'bi':dc.status.includes('Construct')?'bc':dc.status==='Planned'?'bp':dc.status==='Operational'?'bo':'bx';
+  const isEEAI=dc.category==='Independent';
+  return `<div class="pi" ${isEEAI?'style="border-top:3px solid #ffd700"':''}>
+    <div class="pn">${dc.name}</div>
+    <div class="pc" style="color:${CC[dc.category]||'var(--pr)'}">${dc.company}</div>
+    ${dc.investment&&dc.investment!=='N/A'?`<div class="pr"><span>Investment</span><span class="pv">${dc.investment}</span></div>`:''}
+    ${dc.capacity_gw?`<div class="pr"><span>Capacity</span><span class="pv">${dc.capacity_gw} GW</span></div>`:''}
+    <div class="pr"><span>Location</span><span class="pv">${loc}</span></div>
+    <div><span class="pbdg ${bCls}">${dc.status}</span></div>
+    ${isEEAI?`<div style="font-size:10px;color:var(--mt);margin-top:6px;line-height:1.5">8× NVIDIA B200 · 160 PFLOPS · 1.536 TB VRAM</div>`:''}
+  </div>`;
+}
+
+// Create markers
+DC.forEach(dc=>{
+  let m;
+  const r=dc.category==='Independent'?16:getRad(dc);
+  const c=gCol(dc);
+  const w=dc.category==='Independent'?3:1.5;
+  const bc=dc.category==='Independent'?'#ffffff':'rgba(255,255,255,0.75)';
+  m=L.circleMarker([dc.lat,dc.lon],{
+    radius:r,fillColor:c,color:bc,weight:w,fillOpacity:.9
+  }).addTo(map);
+  m.bindPopup(popH(dc),{maxWidth:340});
+  m.on('click',()=>sel(dc.id));
+  mks[dc.id]=m;
+});
+
+function filt(){
+  return DC.filter(dc=>{
+    const mc=aC==='all'||dc.category===aC;
+    const ms=aS==='all'||
+      (aS==='construction'&&dc.status.toLowerCase().includes('construct'))||
+      (aS==='planned'&&dc.status==='Planned')||
+      (aS==='operational'&&dc.status==='Operational');
+    const q=sq.toLowerCase();
+    const mq=!q||[dc.name,dc.company,dc.city||'',dc.state||'',dc.country||'',dc.notes||''].some(s=>s.toLowerCase().includes(q));
+    return mc&&ms&&mq;
+  });
+}
+
+function bCls(s,cat){
+  if(cat==='Independent')return 'bi';
+  if(s.includes('Construct'))return 'bc';
+  if(s==='Planned')return 'bp';
+  if(s==='Operational')return 'bo';
+  if(s.includes('Partial'))return 'bx';
+  return 'be';
+}
+function bTxt(s){
+  if(s.includes('Construct'))return 'Building';if(s.includes('Partial'))return 'Partial';return s;
+}
+
+function render(){
+  const fd=filt();
+  const lEl=document.getElementById('dcl');
+  document.getElementById('lct').textContent=fd.length+' project'+(fd.length!==1?'s':'');
+  document.getElementById('ht').textContent=fd.length;
+  document.getElementById('hb').textContent=fd.filter(d=>d.status.includes('Construct')).length;
+  document.getElementById('sb2').textContent=fd.filter(d=>d.status.includes('Construct')).length;
+  document.getElementById('sp2').textContent=fd.filter(d=>d.status==='Planned').length;
+  document.getElementById('sl2').textContent=fd.filter(d=>d.status==='Operational').length;
+  DC.forEach(dc=>{
+    const vis=fd.some(f=>f.id===dc.id);
+    if(vis){if(!map.hasLayer(mks[dc.id]))mks[dc.id].addTo(map);}
+    else{if(map.hasLayer(mks[dc.id]))map.removeLayer(mks[dc.id]);}
+  });
+  const sorted=[...fd].sort((a,b)=>{
+    if(a.category==='Independent')return -1;if(b.category==='Independent')return 1;
+    const av=a.investment&&a.investment!=='N/A'&&a.investment!=='Custom Enterprise Build'?parseFloat(a.investment.replace(/[^0-9.]/g,''))||0:0;
+    const bv=b.investment&&b.investment!=='N/A'&&b.investment!=='Custom Enterprise Build'?parseFloat(b.investment.replace(/[^0-9.]/g,''))||0:0;
+    return bv-av;
+  });
+  lEl.innerHTML=sorted.map(dc=>{
+    const loc=[dc.city,dc.state,dc.country].filter(Boolean).join(', ');
+    const inv=dc.investment&&dc.investment!=='N/A'?dc.investment:'';
+    const cc=CC[dc.category]||'#78909c';
+    const isEEAI=dc.category==='Independent';
+    return `<div class="dci ${dc.id===selId?'sel':''} ${isEEAI?'':''}
+      " data-id="${dc.id}" role="option" tabindex="0" aria-selected="${dc.id===selId}"
+      ${isEEAI?'style="background:rgba(255,215,0,.06);border-left:2px solid #ffd700"':''}>
+      <div class="dci-top">
+        <span class="dcn"><b>${dc.name}</b></span>
+        <span class="bdg ${bCls(dc.status,dc.category)}">${isEEAI?'Live':bTxt(dc.status)}</span>
+      </div>
+      <div class="dcm">
+        <span style="display:flex;align-items:center;gap:4px">
+          <span class="dci-dot" style="background:${cc}"></span>
+          <span class="dcc" style="color:${cc}">${dc.company}</span>
+        </span>
+        <span>${loc}</span>
+        ${inv?`<span style="font-family:var(--fm)">${inv}</span>`:''}
+      </div>
+      ${isEEAI?`<div style="font-size:10px;color:var(--mt);margin-top:2px">8× B200 · 160 PFLOPS · 6 TB DDR5 · 1.536 TB VRAM</div>`:''}
+    </div>`;
+  }).join('');
+  lEl.querySelectorAll('.dci').forEach(el=>{
+    el.addEventListener('click',()=>sel(+el.dataset.id));
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sel(+el.dataset.id);}});
+  });
+}
+
+function sel(id){
+  selId=id;
+  const dc=DC.find(d=>d.id===id);
+  if(!dc)return;
+  map.flyTo([dc.lat,dc.lon],Math.max(map.getZoom(),dc.category==='Independent'?10:5),{duration:1.1});
+  if(mks[id])mks[id].openPopup();
+  showDet(dc);
+  render();
+  setTimeout(()=>{const el=document.querySelector(`[data-id="${id}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},100);
+}
+
+function showDet(dc){
+  const panel=document.getElementById('dp');
+  const isEEAI=dc.category==='Independent';
+  panel.classList.toggle('eeai',isEEAI);
+  const loc=[dc.city,dc.state,dc.country].filter(Boolean).join(', ');
+  document.getElementById('dn').textContent=dc.name;
+  const co=document.getElementById('dc2');
+  co.textContent=dc.company;
+  co.style.color=CC[dc.category]||'var(--pr)';
+  document.getElementById('dst').textContent=isEEAI?'Operational (Live)':dc.status;
+  document.getElementById('dlc').textContent=loc;
+  document.getElementById('drg').textContent=dc.region;
+  document.getElementById('dnt').textContent=dc.notes||'No additional notes.';
+  const ir=document.getElementById('dinvr');
+  if(dc.investment&&dc.investment!=='N/A'){document.getElementById('dinv').textContent=dc.investment;ir.style.display='flex';}else ir.style.display='none';
+  const cr=document.getElementById('dcpr');
+  if(dc.capacity_gw){document.getElementById('dcp').textContent=dc.capacity_gw+' GW';cr.style.display='flex';}else cr.style.display='none';
+  const sr=document.getElementById('dsqr');
+  if(dc.sqft){document.getElementById('dsq').textContent=Number(dc.sqft).toLocaleString()+' sqft';sr.style.display='flex';}else sr.style.display='none';
+  panel.classList.add('vis');
+  panel.setAttribute('aria-hidden','false');
+}
+
+document.getElementById('dpc').addEventListener('click',()=>{
+  document.getElementById('dp').classList.remove('vis','eeai');
+  document.getElementById('dp').setAttribute('aria-hidden','true');
+  selId=null;render();
+});
+document.getElementById('cf').addEventListener('click',e=>{
+  const c=e.target.closest('.fc');if(!c)return;
+  aC=c.dataset.cat;document.querySelectorAll('.fc').forEach(x=>x.classList.toggle('active',x.dataset.cat===aC));render();
+});
+document.getElementById('sf').addEventListener('click',e=>{
+  const c=e.target.closest('.sc');if(!c)return;
+  aS=c.dataset.status;document.querySelectorAll('.sc').forEach(x=>x.classList.toggle('active',x.dataset.status===aS));render();
+});
+document.getElementById('srch').addEventListener('input',e=>{sq=e.target.value;render();});
+const sbEl=document.getElementById('sb');
+const sbtBtn=document.getElementById('sbt');
+sbtBtn.addEventListener('click',()=>{
+  sbO=!sbO;sbEl.classList.toggle('collapsed',!sbO);sbtBtn.setAttribute('aria-expanded',String(sbO));
+  document.getElementById('ti').innerHTML=sbO?'<polyline points="15 18 9 12 15 6"/>':'<polyline points="9 18 15 12 9 6"/>';
+  setTimeout(()=>map.invalidateSize(),350);
+});
+const tBtn=document.getElementById('tbtn');let th='dark';
+tBtn.addEventListener('click',()=>{
+  th=th==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',th);
+  tBtn.innerHTML=th==='dark'?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>':'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+  tBtn.setAttribute('aria-label',th==='dark'?'Switch to light mode':'Switch to dark mode');
+});
+render();
+window.addEventListener('resize',()=>map.invalidateSize());
+</script>
+</body>
+</html>
